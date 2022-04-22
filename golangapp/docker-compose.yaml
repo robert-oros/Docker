@@ -10,3 +10,13 @@ services:
       - 4000:3306
       volumes:
         - $PWD/schema:/docker-entrypoint-initdb.d
+  api:
+    build: .
+    ports:
+      - 8000:8080
+    networks:
+      - my-net
+
+networks:
+  my-net:
+    driver: bridge
