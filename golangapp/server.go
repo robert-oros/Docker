@@ -21,23 +21,47 @@ func printRows(db *sql.DB) {
 }
 
 func addHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "ADD")
+	// fmt.Fprintf(w, "ADD")
 
 	if r.Method == http.MethodGet {
 		nume := r.URL.Query().Get("nume")
 		prenume := r.URL.Query().Get("prenume")
-		addData(nume, prenume)
+		if err := addData(nume, prenume); err != nil {
+			// err = fmt.Errorf("add data: %w", err)
+			log.Printf("%s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
 }
 
-func addData(nume string, prenume string) {
-    db, _ := sql.Open("mysql", "root:root@tcp(127.0.0.1:4000)/db")
-	statement, _ := db.Prepare("CREATE TABLE IF NOT EXISTS demisol (id INTEGER PRIMARY KEY, nume TEXT, prenume TEXT)")
-	statement.Exec()
-	statement, _ = db.Prepare("INSERT INTO demisol (nume, prenume) VALUES (?, ?)")
+func addData(nume string, prenume string) error {
+    db, err := sql.Open("mysql", "tst:root@tcp(db:3306)/db")
+	if err != nil {
+		return fmt.Errorf("open mysql: %w", err)
+	}
 
-	statement.Exec(nume, prenume)
+	if err = db.Ping(); err != nil {
+		return fmt.Errorf("ping: %w", err)
+	}
+
+	statement, err := db.Prepare("CREATE TABLE IF NOT EXISTS demisol (id INTEGER PRIMARY KEY, nume TEXT, prenume TEXT)")
+	if err != nil {
+		return fmt.Errorf("db prepare create: %w", err)
+	}
+	if _, err = statement.Exec(); err != nil {
+		return fmt.Errorf("db exec: %w", err)
+	}
+
+	statement, err = db.Prepare("INSERT INTO demisol (nume, prenume) VALUES (?, ?)")
+	if err != nil {
+		return fmt.Errorf("db prepare insert: %w", err)
+	}
+
+	if _, err = statement.Exec(nume, prenume); err != nil {
+		return fmt.Errorf("db exec: %w", err)
+	}
 	printRows(db)
+	return nil
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +69,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodDelete {
 		id := r.URL.Query().Get("id")
-		db, _ := sql.Open("mysql", "root:root@tcp(127.0.0.1:4000)/db")
+		db, _ := sql.Open("mysql", "tst:root@tcp(db:3306)/db")
 		statement, _ := db.Prepare("DELETE FROM demisol WHERE ID = ?")
 		statement.Exec(id)
 

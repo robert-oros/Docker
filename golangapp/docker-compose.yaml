@@ -1,19 +1,28 @@
 version: '3'
 services:
   db:
-      image: mysql:5.7
-      restart: always
-      environment:
-        MYSQL_DATABASE: db
-        MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
-      ports:
-      - 4000:3306
-      volumes:
-        - $PWD/schema:/docker-entrypoint-initdb.d
-  api:
-    build: .
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: db
+      MYSQL_USER: tst
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - 8000:8080
+    - 4000:3306
+    networks:
+    - my-net
+    volumes:
+      - $PWD/schema:/docker-entrypoint-initdb.d
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    ports:
+      - 8080:8080
+    restart: always
     networks:
       - my-net
 
