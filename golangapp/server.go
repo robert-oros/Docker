@@ -40,6 +40,7 @@ func main() {
 
 	http.HandleFunc("/delete", s.deleteHandler)
 	http.HandleFunc("/add", s.addHandler)
+	http.HandleFunc("/get", s.getHandler)
 
 	fmt.Printf("Starting server at port 8080\n")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -47,8 +48,24 @@ func main() {
 	}
 }
 
+func (s *Service) getHandler(w http.ResponseWriter, r *http.Request) {
+	var id, nume, prenume string
+
+	row, err := s.DB.Query("SELECT id, nume, prenume FROM demisol")
+	if err != nil {
+		fmt.Println("select frm demisol: %w", err)
+	}
+
+	for row.Next() {
+		row.Scan(&id, &nume, &prenume)
+		log.Println("Person: ", id, " ", nume, " ", prenume)
+		w.Write([]byte(nume+"\n"))
+	}
+
+}
+
 func (s *Service) addHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
+	if r.Method == http.MethodGet { // should be method POST
 		nume := r.URL.Query().Get("nume")
 		prenume := r.URL.Query().Get("prenume")
 		if err := addData(nume, prenume, s.DB); err != nil {
@@ -61,7 +78,7 @@ func (s *Service) addHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Service) deleteHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodDelete {
 		id := r.URL.Query().Get("id")
-		
+
 		statement, err := s.DB.Prepare("DELETE FROM demisol WHERE ID = ?")
 		if err != nil {
 			fmt.Println("delete from %s", err)
@@ -113,6 +130,7 @@ func printRows(db *sql.DB) error {
 	for row.Next() {
 		row.Scan(&id, &nume, &prenume)
 		log.Println("Person: ", id, " ", nume, " ", prenume)
+		return nil
 	}
 
 	return nil
